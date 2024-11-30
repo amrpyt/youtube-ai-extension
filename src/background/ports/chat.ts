@@ -22,52 +22,79 @@ async function createChatCompletion(
   context: any
 ) {
   const isGemini = model.includes("gemini");
-  const llm = isGemini 
-    ? createGeminiLlm(context.geminiKey) 
-    : createLlm(context.openAIKey);
-  console.log("Creating Chat Completion")
+  let llm;
+  
+  try {
+    llm = isGemini 
+      ? createGeminiLlm(context.geminiKey) 
+      : createLlm(context.openAIKey);
+  } catch (error) {
+    console.error("Error initializing LLM:", error);
+    throw new Error("Failed to initialize AI model");
+  }
+
+  console.log("Creating Chat Completion with model:", model);
 
   const parsed = context.transcript.events
     .filter((x: { segs: any }) => x.segs)
     .map((x: { segs: any[] }) => x.segs.map((y: { utf8: any }) => y.utf8).join(" "))
     .join(" ")
     .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/\s+/g, " ");
 
   const SYSTEM_WITH_CONTEXT = SYSTEM.replace("{title}", context.metadata.title).replace(
     "{transcript}",
     parsed
-  )
-  messages.unshift({ role: "system", content: SYSTEM_WITH_CONTEXT })
+  );
+  messages.unshift({ role: "system", content: SYSTEM_WITH_CONTEXT });
 
-  console.log("Messages sent to LLM")
-  console.log(messages)
+  console.log("Messages prepared for LLM");
 
   if (isGemini) {
-    const stream = await streamGeminiChat(llm, messages, model);
-    return {
-      on: (event: string, callback: any) => {
-        if (event === "content") {
-          (async () => {
-            for await (const chunk of stream) {
-              callback(chunk.text, "");
-            }
-          })();
-        } else if (event === "end") {
-          (async () => {
-            for await (const _ of stream) { /* consume stream */ }
-            callback();
-          })();
+    try {
+      const stream = await streamGeminiChat(llm, messages, model);
+      return {
+        on: (event: string, callback: any) => {
+          if (event === "content") {
+            (async () => {
+              try {
+                for await (const chunk of stream) {
+                  callback(chunk.text, "");
+                }
+              } catch (error) {
+                console.error("Gemini streaming error:", error);
+                callback("Error: Failed to stream response", "");
+              }
+            })();
+          } else if (event === "end") {
+            (async () => {
+              try {
+                for await (const _ of stream) { /* consume stream */ }
+                callback();
+              } catch (error) {
+                console.error("Gemini end stream error:", error);
+                callback();
+              }
+            })();
+          }
         }
-      }
-    };
+      };
+    } catch (error) {
+      console.error("Error in Gemini chat:", error);
+      throw error;
+    }
   }
 
-  return llm.beta.chat.completions.stream({
-    messages: messages,
-    model: model || "gpt-3.5-turbo",
-    stream: true
-  })
+  try {
+    return llm.beta.chat.completions.stream({
+      messages: messages,
+      model: model || "gpt-3.5-turbo",
+      stream: true
+    });
+  } catch (error) {
+    console.error("Error in OpenAI chat:", error);
+    throw error;
+  }
 }
 
 const handler: PlasmoMessaging.PortHandler = async (req, res) => {

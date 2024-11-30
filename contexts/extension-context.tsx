@@ -95,3 +95,28 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
 
   return <ExtensionContext.Provider value={value}>{children}</ExtensionContext.Provider>
 }
+
+export function useExtensionContext() {
+  const [openAIKey] = useAtom(openAIKeyAtom);
+  const [geminiKey] = useAtom(geminiKeyAtom);
+  const [selectedModel] = useAtom(selectedModelAtom);
+
+  const isGeminiModel = selectedModel?.includes("gemini");
+  const requiredKey = isGeminiModel ? geminiKey : openAIKey;
+  const isKeyValid = Boolean(requiredKey && requiredKey.length > 0);
+
+  React.useEffect(() => {
+    if (!isKeyValid) {
+      console.warn(`Missing ${isGeminiModel ? 'Gemini' : 'OpenAI'} API key`);
+    }
+  }, [isKeyValid, isGeminiModel]);
+
+  return {
+    openAIKey,
+    geminiKey,
+    selectedModel,
+    isGeminiModel,
+    isKeyValid,
+    requiredKey
+  };
+}
