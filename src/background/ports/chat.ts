@@ -1,4 +1,5 @@
 import { createLlm } from "@/utils/llm"
+import { createGeminiLlm, streamGeminiChat } from "@/utils/gemini"
 import type { ChatCompletionMessageParam } from "openai/resources"
 
 import type { PlasmoMessaging } from "@plasmohq/messaging"
@@ -20,7 +21,8 @@ async function createChatCompletion(
   messages: ChatCompletionMessageParam[],
   context: any
 ) {
-  const llm = createLlm(context.openAIKey)
+  const isGemini = model.includes("gemini");
+  const llm = isGemini ? createGeminiLlm(context.openAIKey) : createLlm(context.openAIKey);
   console.log("Creating Chat Completion")
 
   const parsed = context.transcript.events
@@ -36,8 +38,28 @@ async function createChatCompletion(
   )
   messages.unshift({ role: "system", content: SYSTEM_WITH_CONTEXT })
 
-  console.log("Messages sent to OpenAI")
+  console.log("Messages sent to LLM")
   console.log(messages)
+
+  if (isGemini) {
+    const stream = await streamGeminiChat(llm, messages, model);
+    return {
+      on: (event: string, callback: any) => {
+        if (event === "content") {
+          (async () => {
+            for await (const chunk of stream) {
+              callback(chunk.text, "");
+            }
+          })();
+        } else if (event === "end") {
+          (async () => {
+            for await (const _ of stream) { /* consume stream */ }
+            callback();
+          })();
+        }
+      }
+    };
+  }
 
   return llm.beta.chat.completions.stream({
     messages: messages,
