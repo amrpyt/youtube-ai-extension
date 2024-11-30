@@ -5,32 +5,32 @@ import * as React from "react"
 // user auth
 
 interface ExtensionState {
-  extensionContainer: any
+  extensionContainer: HTMLElement | null
   extensionIsOpen: boolean
-  extensionTheme: string | null
+  extensionTheme: Theme | null
   extensionLoading: boolean
-  extensionPanel: string
-  extensionVideoId: string
+  extensionPanel: Panel
+  extensionVideoId: string | null
   extensionData: any
 }
 
 const initialState: ExtensionState = {
   extensionContainer: null,
-  extensionIsOpen: false,
+  extensionIsOpen: true,
   extensionTheme: null,
   extensionLoading: false,
   extensionPanel: "Summary",
-  extensionVideoId: "",
+  extensionVideoId: null,
   extensionData: null
 }
 
 interface ExtensionActions {
-  setExtensionContainer: (container: any) => void
+  setExtensionContainer: (container: HTMLElement | null) => void
   setExtensionIsOpen: (isOpen: boolean) => void
-  setExtensionTheme: (theme: string | null) => void
+  setExtensionTheme: (theme: Theme | null) => void
   setExtensionLoading: (loading: boolean) => void
-  setExtensionPanel: (panel: string) => void
-  setExtensionVideoId: (videoId: string) => void
+  setExtensionPanel: (panel: Panel) => void
+  setExtensionVideoId: (videoId: string | null) => void
   setExtensionData: (data: any) => void
   resetExtension: () => void
 }
@@ -52,27 +52,16 @@ interface ExtensionProviderProps {
 }
 
 export function ExtensionProvider({ children }: ExtensionProviderProps) {
-  const [extensionContainer, setExtensionContainer] = React.useState<any>(
-    initialState.extensionContainer
-  )
-  const [extensionIsOpen, setExtensionIsOpen] = React.useState<boolean>(
-    initialState.extensionIsOpen
-  )
-  const [extensionTheme, setExtensionTheme] = React.useState<string | null>(
-    initialState.extensionTheme
-  )
-  const [extensionLoading, setExtensionLoading] = React.useState<boolean>(
-    initialState.extensionLoading
-  )
-  const [extensionPanel, setExtensionPanel] = React.useState<string>(
-    initialState.extensionPanel
-  )
-  const [extensionVideoId, setExtensionVideoId] = React.useState<string>(
-    initialState.extensionVideoId
-  )
-  const [extensionData, setExtensionData] = React.useState<any>(
-    initialState.extensionData
-  )
+  const [extensionContainer, setExtensionContainer] = React.useState<HTMLElement | null>(null)
+  const [extensionIsOpen, setExtensionIsOpen] = React.useState(true)
+  const [extensionPanel, setExtensionPanel] = React.useState<Panel>("Summary")
+  const [extensionVideoId, setExtensionVideoId] = React.useState<string | null>(null)
+  const [extensionLoading, setExtensionLoading] = React.useState(false)
+  const [extensionData, setExtensionData] = React.useState<any>(null)
+  const [extensionTheme, setExtensionTheme] = React.useState<Theme | null>(null)
+
+  const openAIKey = useAtomValue(openAIKeyAtom)
+  const geminiKey = useAtomValue(geminiKeyAtom)
 
   // User Auth logic
 
@@ -88,19 +77,19 @@ export function ExtensionProvider({ children }: ExtensionProviderProps) {
 
   const value = {
     extensionContainer,
-    extensionIsOpen,
-    extensionTheme,
-    extensionLoading,
-    extensionPanel,
-    extensionVideoId,
-    extensionData,
     setExtensionContainer,
+    extensionIsOpen,
     setExtensionIsOpen,
-    setExtensionTheme,
-    setExtensionLoading,
+    extensionPanel,
     setExtensionPanel,
+    extensionVideoId,
     setExtensionVideoId,
+    extensionLoading,
+    setExtensionLoading,
+    extensionData: extensionData ? { ...extensionData, openAIKey, geminiKey } : null,
     setExtensionData,
+    extensionTheme,
+    setExtensionTheme,
     resetExtension
   }
 

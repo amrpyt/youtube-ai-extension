@@ -3,6 +3,7 @@ import Summary from "@/components/summary"
 import Transcript from "@/components/transcript"
 import { useExtension } from "@/contexts/extension-context"
 import { openAIKeyAtom } from "@/lib/atoms/openai"
+import { geminiKeyAtom } from "@/lib/atoms/gemini"
 import { useAtomValue } from "jotai"
 import React from "react"
 
@@ -14,8 +15,9 @@ export default function ExtensionPanels({}: ExtensionPanelsProps) {
   const { extensionPanel } = useExtension()
 
   const openAIKey = useAtomValue(openAIKeyAtom)
+  const geminiKey = useAtomValue(geminiKeyAtom)
 
-  if (!openAIKey) {
+  if (!openAIKey && !geminiKey) {
     return (
       <div>
         <OpenAISetup />

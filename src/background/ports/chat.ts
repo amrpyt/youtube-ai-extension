@@ -22,7 +22,9 @@ async function createChatCompletion(
   context: any
 ) {
   const isGemini = model.includes("gemini");
-  const llm = isGemini ? createGeminiLlm(context.openAIKey) : createLlm(context.openAIKey);
+  const llm = isGemini 
+    ? createGeminiLlm(context.geminiKey) 
+    : createLlm(context.openAIKey);
   console.log("Creating Chat Completion")
 
   const parsed = context.transcript.events
